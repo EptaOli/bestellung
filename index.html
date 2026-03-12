@@ -1206,10 +1206,12 @@ function createBestellungData() {
         lieferadresse: document.getElementById('lieferadresse').value.trim(),
         liefertermin: document.getElementById('liefertermin').value,
         notizen: document.getElementById('notizen').value.trim(),
-        ersteller: einstellungen.benutzer || 'Unbekannt',
+        ersteller: '',
         firma: einstellungen.firma || '',
         positionen: warenkorb.map(item => ({
             artikel_nr: item.artikel_nr,
+            pds_nr: item.pds_nr || '',
+            unterkategorie: item.unterkategorie || '',
             bezeichnung: item.bezeichnung,
             einheit: item.einheit,
             kategorie: item.kategorie,
@@ -1231,184 +1233,84 @@ function bestellungPerEmail() {
     const empfaenger = einstellungen.defaultEmail;
     const betreff = `Bestellung ${bestellung.bestellnummer} - ${bestellung.projektnummer}`;
     
-    // Erstelle HTML-E-Mail mit Tabelle
-    let htmlBody = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .section { margin-bottom: 25px; }
-        .section-title { font-size: 18px; font-weight: bold; color: #667eea; margin-bottom: 10px; border-bottom: 2px solid #667eea; padding-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background-color: #667eea; color: white; padding: 12px; text-align: left; font-weight: bold; }
-        td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .info-row { margin: 8px 0; }
-        .label { font-weight: bold; color: #555; }
-        .total { background-color: #f0f0f0; font-weight: bold; padding: 15px; margin-top: 20px; border-radius: 5px; }
-        .footer { margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-radius: 5px; font-size: 12px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1 style="margin: 0;">📦 Bestellung ${bestellung.bestellnummer}</h1>
-        <p style="margin: 5px 0 0 0;">${new Date(bestellung.datum).toLocaleString('de-DE')}</p>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Bestellinformationen</div>
-        <div class="info-row"><span class="label">Bestellnummer:</span> ${bestellung.bestellnummer}</div>
-        <div class="info-row"><span class="label">Datum:</span> ${new Date(bestellung.datum).toLocaleString('de-DE')}</div>
-        <div class="info-row"><span class="label">Erstellt von:</span> ${bestellung.ersteller}${bestellung.firma ? ` (${bestellung.firma})` : ''}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Projektdetails</div>
-        <div class="info-row"><span class="label">Projektnummer:</span> ${bestellung.projektnummer}</div>
-        <div class="info-row"><span class="label">Bauvorhaben:</span> ${bestellung.bauvorhaben}</div>
-        <div class="info-row"><span class="label">Lieferart:</span> ${bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager'}</div>
-        ${bestellung.lieferart === 'baustelle' ? `<div class="info-row"><span class="label">Lieferadresse:</span> ${bestellung.lieferadresse}</div>` : ''}
-        <div class="info-row"><span class="label">Gewünschter Liefertermin:</span> ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}</div>
-        ${bestellung.notizen ? `<div class="info-row"><span class="label">Notizen:</span> ${bestellung.notizen}</div>` : ''}
-    </div>
-
-    <div class="section">
-        <div class="section-title">Bestellpositionen</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 50px;">Pos.</th>
-                    <th>Artikel-Nr.</th>
-                    <th style="width: 100px;">PDS-Nr.</th>
-                    <th>Bezeichnung</th>
-                    <th style="width: 100px;">Menge</th>
-                    <th style="width: 80px;">Einheit</th>
-                    <th style="width: 150px;">Kategorie</th>
-                </tr>
-            </thead>
-            <tbody>
-`;
-
-    bestellung.positionen.forEach((pos, index) => {
-        htmlBody += `
-                <tr>
-                    <td style="text-align: center;">${index + 1}</td>
-                    <td><strong>${pos.artikel_nr || '-'}</strong></td>
-                    <td>${pos.pds_nr || '-'}</td>
-                    <td>${pos.bezeichnung}</td>
-                    <td style="text-align: right;"><strong>${pos.menge}</strong></td>
-                    <td>${pos.einheit}</td>
-                    <td>${pos.kategorie || '-'}${pos.unterkategorie ? ` / ${pos.unterkategorie}` : ''}</td>
-                </tr>`;
-    });
-
     const gesamtMenge = bestellung.positionen.reduce((sum, p) => sum + p.menge, 0);
-
-    htmlBody += `
-            </tbody>
-        </table>
-        
-        <div class="total">
-            📊 Gesamt: ${bestellung.positionen.length} Positionen | ${gesamtMenge} Artikel
-        </div>
-    </div>
-
-    <div class="footer">
-        <p><strong>Hinweis:</strong> Diese Bestellung wurde über das Bestellsystem erstellt.</p>
-        <p>Für Rückfragen oder Änderungen bitte die Bestellnummer angeben.</p>
-        <p style="margin-top: 15px; font-size: 11px;">JSON-Daten für automatische Verarbeitung:</p>
-        <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px; font-size: 10px; overflow-x: auto;">${JSON.stringify(bestellung, null, 2)}</pre>
-    </div>
-</body>
-</html>`;
-
-    // Speichere HTML für Fallback
-    const htmlBlob = new Blob([htmlBody], { type: 'text/html;charset=utf-8' });
-    const htmlUrl = URL.createObjectURL(htmlBlob);
     
-    // Erstelle schöne Plaintext-Tabelle für E-Mail
-    let plainBody = `BESTELLUNG ${bestellung.bestellnummer}\n`;
-    plainBody += `${'='.repeat(80)}\n\n`;
-    plainBody += `Datum: ${new Date(bestellung.datum).toLocaleString('de-DE')}\n`;
-    plainBody += `Erstellt von: ${bestellung.ersteller}${bestellung.firma ? ` (${bestellung.firma})` : ''}\n\n`;
+    // Erstelle perfekte ASCII-Tabelle für E-Mail
+    let emailBody = '';
+    emailBody += `╔═══════════════════════════════════════════════════════════════════════════════╗\n`;
+    emailBody += `║                           BESTELLUNG ${bestellung.bestellnummer}                           ║\n`;
+    emailBody += `╚═══════════════════════════════════════════════════════════════════════════════╝\n\n`;
     
-    plainBody += `PROJEKT\n`;
-    plainBody += `${'-'.repeat(80)}\n`;
-    plainBody += `Projektnummer:      ${bestellung.projektnummer}\n`;
-    plainBody += `Bauvorhaben:        ${bestellung.bauvorhaben}\n`;
-    plainBody += `Lieferart:          ${bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager'}\n`;
+    emailBody += `Datum: ${new Date(bestellung.datum).toLocaleString('de-DE')}\n`;
+    if (bestellung.firma) {
+        emailBody += `Firma: ${bestellung.firma}\n`;
+    }
+    emailBody += `\n`;
+    
+    emailBody += `┌─ PROJEKT ─────────────────────────────────────────────────────────────────────┐\n`;
+    emailBody += `│ Projektnummer:      ${bestellung.projektnummer.padEnd(58)}│\n`;
+    emailBody += `│ Bauvorhaben:        ${bestellung.bauvorhaben.padEnd(58)}│\n`;
+    emailBody += `│ Lieferart:          ${(bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager').padEnd(58)}│\n`;
     if (bestellung.lieferart === 'baustelle') {
-        plainBody += `Lieferadresse:      ${bestellung.lieferadresse}\n`;
+        emailBody += `│ Lieferadresse:      ${bestellung.lieferadresse.padEnd(58)}│\n`;
     }
-    plainBody += `Liefertermin:       ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}\n`;
+    emailBody += `│ Gewünschter Termin: ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE').padEnd(58)}│\n`;
     if (bestellung.notizen) {
-        plainBody += `Notizen:            ${bestellung.notizen}\n`;
+        const notizen = bestellung.notizen.length > 58 ? bestellung.notizen.substring(0, 55) + '...' : bestellung.notizen;
+        emailBody += `│ Notizen:            ${notizen.padEnd(58)}│\n`;
     }
-    plainBody += `\n`;
+    emailBody += `└───────────────────────────────────────────────────────────────────────────────┘\n\n`;
     
-    plainBody += `BESTELLPOSITIONEN\n`;
-    plainBody += `${'='.repeat(80)}\n\n`;
-    
-    // Tabellen-Header
-    plainBody += `${'Pos'.padEnd(5)} ${'Art.-Nr.'.padEnd(12)} ${'PDS-Nr.'.padEnd(10)} ${'Bezeichnung'.padEnd(30)} ${'Menge'.padStart(8)} ${'Einheit'.padEnd(8)}\n`;
-    plainBody += `${'-'.repeat(80)}\n`;
+    emailBody += `┌─ BESTELLPOSITIONEN ───────────────────────────────────────────────────────────┐\n`;
+    emailBody += `│                                                                               │\n`;
+    emailBody += `│ Pos  Art.-Nr.     PDS-Nr.    Bezeichnung                  Menge  Einheit      │\n`;
+    emailBody += `│ ─────────────────────────────────────────────────────────────────────────────  │\n`;
     
     bestellung.positionen.forEach((pos, index) => {
-        const posNr = String(index + 1).padEnd(5);
+        const posNr = String(index + 1).padStart(3);
         const artNr = (pos.artikel_nr || '-').substring(0, 12).padEnd(12);
-        const pdsNr = (pos.pds_nr || '-').substring(0, 10).padEnd(10);
-        const bez = pos.bezeichnung.substring(0, 30).padEnd(30);
-        const menge = String(pos.menge).padStart(8);
-        const einheit = pos.einheit.padEnd(8);
+        const pdsNr = (pos.pds_nr || '-').substring(0, 11).padEnd(11);
+        const bez = pos.bezeichnung.substring(0, 24).padEnd(24);
+        const menge = String(pos.menge).padStart(6);
+        const einheit = pos.einheit.substring(0, 6).padEnd(6);
         
-        plainBody += `${posNr} ${artNr} ${pdsNr} ${bez} ${menge} ${einheit}\n`;
+        emailBody += `│ ${posNr}  ${artNr} ${pdsNr} ${bez} ${menge}  ${einheit}    │\n`;
         
-        // Zusatzinfo wenn Bezeichnung zu lang oder Kategorie vorhanden
-        if (pos.bezeichnung.length > 30 || pos.kategorie) {
-            plainBody += `      `;
-            if (pos.bezeichnung.length > 30) {
-                plainBody += `${pos.bezeichnung.substring(30)}`;
+        // Zweite Zeile für lange Bezeichnungen oder Kategorie-Info
+        if (pos.bezeichnung.length > 24 || pos.kategorie) {
+            let zusatz = '';
+            if (pos.bezeichnung.length > 24) {
+                zusatz = pos.bezeichnung.substring(24, 65);
             }
             if (pos.kategorie) {
-                plainBody += ` [${pos.kategorie}${pos.unterkategorie ? ` / ${pos.unterkategorie}` : ''}]`;
+                const kat = ` [${pos.kategorie}${pos.unterkategorie ? ` / ${pos.unterkategorie}` : ''}]`;
+                zusatz = zusatz ? `${zusatz} ${kat}` : kat.trim();
             }
-            plainBody += `\n`;
+            if (zusatz) {
+                emailBody += `│      ${zusatz.substring(0, 71).padEnd(71)}│\n`;
+            }
         }
     });
     
-    plainBody += `${'-'.repeat(80)}\n`;
-    plainBody += `GESAMT: ${bestellung.positionen.length} Positionen | ${gesamtMenge} Artikel\n`;
-    plainBody += `${'='.repeat(80)}\n\n`;
+    emailBody += `│ ─────────────────────────────────────────────────────────────────────────────  │\n`;
+    emailBody += `│ GESAMT: ${String(bestellung.positionen.length).padStart(3)} Positionen │ ${String(gesamtMenge).padStart(5)} Artikel${' '.repeat(36)}│\n`;
+    emailBody += `│                                                                               │\n`;
+    emailBody += `└───────────────────────────────────────────────────────────────────────────────┘\n\n`;
     
-    plainBody += `📎 ANHANG: Für optimale Darstellung siehe beigefügte HTML-Datei!\n\n`;
-    plainBody += `Hinweis: Diese Bestellung wurde über das Bestellsystem erstellt.\n`;
-    plainBody += `Für Rückfragen oder Änderungen bitte die Bestellnummer angeben.\n\n`;
-    plainBody += `--- JSON DATEN (nicht löschen für Rückmeldung) ---\n`;
-    plainBody += `${JSON.stringify(bestellung, null, 2)}`;
+    emailBody += `\n`;
+    emailBody += `Hinweis: Diese Bestellung wurde über das Bestellsystem erstellt.\n`;
+    emailBody += `Für Rückfragen oder Bestätigung bitte die Bestellnummer angeben.\n\n`;
     
-    // Download HTML-Version als Backup
-    const htmlLink = document.createElement('a');
-    htmlLink.href = htmlUrl;
-    htmlLink.download = `Bestellung_${bestellung.bestellnummer}.html`;
-    document.body.appendChild(htmlLink);
-    htmlLink.click();
-    document.body.removeChild(htmlLink);
+    emailBody += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    emailBody += `JSON-DATEN (für automatische Verarbeitung - bitte nicht löschen):\n`;
+    emailBody += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    emailBody += JSON.stringify(bestellung, null, 2);
     
-    // Öffne E-Mail-Client
-    setTimeout(() => {
-        const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(plainBody)}`;
-        window.location.href = mailtoLink;
-        
-        showToast('✅ HTML-Version heruntergeladen + E-Mail geöffnet! Hänge die HTML-Datei an für beste Darstellung.', 'success');
-        
-        setTimeout(() => {
-            URL.revokeObjectURL(htmlUrl);
-        }, 1000);
-    }, 500);
+    // Öffne E-Mail-Client mit formatierter Tabelle
+    const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(emailBody)}`;
+    window.location.href = mailtoLink;
     
+    showToast('✅ E-Mail mit Tabelle geöffnet!', 'success');
     clearBestellformular();
 }
 
