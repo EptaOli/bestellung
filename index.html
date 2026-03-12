@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestellsystem Lokal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            overflow-x: auto;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            border: none;
+            background: none;
+            font-size: 14px;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .product-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .product-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .qty-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .cart-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .order-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-neu {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-bestaetigt {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-geliefert {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .search-bar select {
+            min-width: 150px;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .import-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .import-zone:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #764ba2;
+        }
+
+        .import-zone-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-group .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Bestellsystem Lokal</h1>
+            <p>Offline-fähige Bestellverwaltung</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('artikel')">📋 Artikel</button>
+            <button class="tab" onclick="switchTab('warenkorb')">🛒 Warenkorb <span id="cartBadge" style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; margin-left: 5px; display: none;">0</span></button>
+            <button class="tab" onclick="switchTab('bestellung')">📝 Bestellung</button>
+            <button class="tab" onclick="switchTab('bestellungen')">📊 Bestellungen</button>
+            <button class="tab" onclick="switchTab('einstellungen')">⚙️ Einstellungen</button>
+        </div>
+
+        <div class="content">
+            <!-- Artikel Tab -->
+            <div id="artikel" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="artikelCount">0</div>
+                        <div class="stat-label">Artikel im Stamm</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="kategorienCount">0</div>
+                        <div class="stat-label">Kategorien</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="cartItemsCount">0</div>
+                        <div class="stat-label">Im Warenkorb</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Artikelkatalog</div>
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Artikel suchen..." oninput="filterArtikel()">
+                        <select id="categoryFilter" onchange="updateSubcategoryFilter(); filterArtikel();">
+                            <option value="">Alle Kategorien</option>
+                        </select>
+                        <select id="subcategoryFilter" onchange="filterArtikel()">
+                            <option value="">Alle Unterkat.</option>
+                        </select>
+                    </div>
+                    <div class="product-grid" id="produktListe">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>Kein Artikelstamm geladen</p>
+                            <p style="font-size: 14px; color: #999; margin-top: 10px;">Importieren Sie einen Artikelstamm</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warenkorb Tab -->
+            <div id="warenkorb" class="tab-content">
+                <div class="section">
+                    <div class="section-title">Warenkorb</div>
+                    <div id="warenkorbListe">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🛒</div>
+                            <p>Warenkorb ist leer</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-danger" onclick="clearWarenkorb()" style="flex: 1;">🗑️ Warenkorb leeren</button>
+                        <button class="btn btn-primary" onclick="switchTab('bestellung')" style="flex: 1;">➡️ Zur Bestellung</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bestellung Tab -->
+            <div id="bestellung" class="tab-content">
+                <div class="section">
+                    <div class="section-title">Bestellinformationen</div>
+                    <div class="form-group">
+                        <label>Projektnummer *</label>
+                        <input type="text" id="projektnummer" placeholder="z.B. PRJ-2024-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Bauvorhaben *</label>
+                        <input type="text" id="bauvorhaben" placeholder="z.B. Neubau Halle">
+                    </div>
+                    <div class="form-group">
+                        <label>Lieferart *</label>
+                        <select id="lieferart" onchange="toggleLieferadresse()">
+                            <option value="">Bitte wählen</option>
+                            <option value="baustelle">Lieferung zur Baustelle</option>
+                            <option value="lager">Abholung ab Lager</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="lieferadresseGroup" style="display: none;">
+                        <label>Lieferadresse *</label>
+                        <input type="text" id="lieferadresse" placeholder="Straße, PLZ Ort">
+                    </div>
+                    <div class="form-group">
+                        <label>Gewünschter Liefertermin *</label>
+                        <input type="date" id="liefertermin">
+                    </div>
+                    <div class="form-group">
+                        <label>Notizen</label>
+                        <textarea id="notizen" rows="3" placeholder="Zusätzliche Informationen..."></textarea>
+                    </div>
+
+                    <div style="margin-top: 30px; padding: 20px; background: #e8f4f8; border-radius: 10px; border-left: 4px solid #0078d4;">
+                        <h3 style="margin-bottom: 15px; color: #0078d4;">📊 Bestellübersicht</h3>
+                        <div id="bestelluebersicht"></div>
+                    </div>
+
+                    <div class="btn-group" style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="bestellungPerEmail()" style="flex: 1;">
+                            📧 Per E-Mail versenden
+                        </button>
+                        <button class="btn btn-success" onclick="downloadBestellungJSON()" style="flex: 1;">
+                            📥 Als JSON herunterladen
+                        </button>
+                        <button class="btn btn-warning" onclick="downloadBestellungCSV()" style="flex: 1;">
+                            📄 Als CSV herunterladen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bestellungen Tab -->
+            <div id="bestellungen" class="tab-content">
+                <div class="section">
+                    <div class="section-title">Meine Bestellungen</div>
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="document.getElementById('bestellungImport').click();">
+                            📥 Bestätigung importieren
+                        </button>
+                        <button class="btn btn-success" onclick="document.getElementById('lieferscheinImport').click();">
+                            📦 Lieferschein importieren
+                        </button>
+                        <input type="file" id="bestellungImport" accept=".json,.eml,.msg,.txt" style="display: none;" onchange="importBestaetigung(event)">
+                        <input type="file" id="lieferscheinImport" accept=".json,.eml,.msg,.txt" style="display: none;" onchange="importLieferschein(event)">
+                    </div>
+                    <div id="bestellungenListe">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>Keine Bestellungen vorhanden</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Einstellungen Tab -->
+            <div id="einstellungen" class="tab-content">
+                <div class="section">
+                    <div class="section-title">Artikelstamm verwalten</div>
+                    <div class="import-zone" onclick="document.getElementById('artikelImport').click()">
+                        <div class="import-zone-icon">📁</div>
+                        <p style="font-weight: 600; margin-bottom: 10px;">Artikelstamm-Datei auswählen</p>
+                        <p style="font-size: 14px; color: #666;">JSON oder CSV-Datei hochladen</p>
+                    </div>
+                    <input type="file" id="artikelImport" accept=".json,.csv" style="display: none;" onchange="importArtikelstamm(event)">
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="exportArtikelstamm()">💾 Artikelstamm exportieren</button>
+                        <button class="btn btn-danger" onclick="clearArtikelstamm()">🗑️ Artikelstamm löschen</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Anwendungseinstellungen</div>
+                    <div class="form-group">
+                        <label>Standard E-Mail Empfänger</label>
+                        <input type="email" id="defaultEmail" placeholder="bestellung@firma.de" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>Firma / Abteilung</label>
+                        <input type="text" id="firma" placeholder="Meine Firma GmbH">
+                    </div>
+                    <div class="form-group">
+                        <label>Benutzer / Name</label>
+                        <input type="text" id="benutzer" placeholder="Max Mustermann">
+                    </div>
+                    <button class="btn btn-success" onclick="saveEinstellungen()">💾 Einstellungen speichern</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Datenmanagement</div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="exportAllesDaten()">
+                            💾 Alle Daten exportieren
+                        </button>
+                        <button class="btn btn-warning" onclick="importAllesDaten()">
+                            📥 Alle Daten importieren
+                        </button>
+                        <button class="btn btn-danger" onclick="resetApp()">
+                            🗑️ Alle Daten löschen
+                        </button>
+                    </div>
+                    <input type="file" id="alleDatenImport" accept=".json" style="display: none;" onchange="handleAlleDatenImport(event)">
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Über diese App</div>
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Typ:</strong> Lokale Offline-App</p>
+                    <p><strong>Speicher:</strong> Alle Daten werden lokal auf Ihrem Gerät gespeichert</p>
+                    <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                        Diese App funktioniert vollständig offline. Alle Daten (Artikelstamm, Warenkorb, Bestellungen) 
+                        werden ausschließlich im lokalen Speicher Ihres Browsers gespeichert.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+// ===== GLOBALE VARIABLEN =====
+let artikelstamm = [];
+let warenkorb = [];
+let bestellungen = [];
+let einstellungen = {
+    defaultEmail: 'bestellung@firma.de',
+    firma: '',
+    benutzer: ''
+};
+
+// ===== INITIALISIERUNG =====
+document.addEventListener('DOMContentLoaded', function() {
+    loadFromLocalStorage();
+    updateStats();
+    updateWarenkorb();
+    updateBestellungen();
+    loadEinstellungen();
+    setMinDate();
+});
+
+function setMinDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('liefertermin').min = today;
+}
+
+// ===== TAB NAVIGATION =====
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+    
+    if (tabName === 'bestellung') {
+        updateBestelluebersicht();
+    }
+}
+
+// ===== LOKALSPEICHER =====
+function loadFromLocalStorage() {
+    const stored = {
+        artikelstamm: localStorage.getItem('artikelstamm'),
+        warenkorb: localStorage.getItem('warenkorb'),
+        bestellungen: localStorage.getItem('bestellungen'),
+        einstellungen: localStorage.getItem('einstellungen')
+    };
+
+    if (stored.artikelstamm) {
+        try {
+            artikelstamm = JSON.parse(stored.artikelstamm);
+            renderArtikel();
+            updateCategoryFilter();
+        } catch (e) {
+            console.error('Fehler beim Laden des Artikelstamms', e);
+        }
+    }
+
+    if (stored.warenkorb) {
+        try {
+            warenkorb = JSON.parse(stored.warenkorb);
+        } catch (e) {
+            console.error('Fehler beim Laden des Warenkorbs', e);
+        }
+    }
+
+    if (stored.bestellungen) {
+        try {
+            bestellungen = JSON.parse(stored.bestellungen);
+        } catch (e) {
+            console.error('Fehler beim Laden der Bestellungen', e);
+        }
+    }
+
+    if (stored.einstellungen) {
+        try {
+            einstellungen = JSON.parse(stored.einstellungen);
+        } catch (e) {
+            console.error('Fehler beim Laden der Einstellungen', e);
+        }
+    }
+}
+
+function saveToLocalStorage() {
+    localStorage.setItem('artikelstamm', JSON.stringify(artikelstamm));
+    localStorage.setItem('warenkorb', JSON.stringify(warenkorb));
+    localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
+    localStorage.setItem('einstellungen', JSON.stringify(einstellungen));
+}
+
+// ===== ARTIKELSTAMM IMPORT/EXPORT =====
+function importArtikelstamm(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            
+            if (file.name.endsWith('.json')) {
+                artikelstamm = JSON.parse(content);
+            } else if (file.name.endsWith('.csv')) {
+                artikelstamm = parseCSV(content);
+            }
+
+            saveToLocalStorage();
+            renderArtikel();
+            updateCategoryFilter();
+            updateStats();
+            showToast(`${artikelstamm.length} Artikel importiert`, 'success');
+        } catch (error) {
+            showToast('Fehler beim Importieren: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function parseCSV(csv) {
+    const lines = csv.split('\n').filter(line => line.trim());
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    
+    return lines.slice(1).map(line => {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let char of line) {
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        values.push(current.trim());
+        
+        const obj = {};
+        headers.forEach((header, index) => {
+            obj[header] = values[index] || '';
+        });
+        return obj;
+    });
+}
+
+function exportArtikelstamm() {
+    if (artikelstamm.length === 0) {
+        showToast('Kein Artikelstamm vorhanden', 'warning');
+        return;
+    }
+
+    const json = JSON.stringify(artikelstamm, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `artikelstamm_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('Artikelstamm exportiert', 'success');
+}
+
+function clearArtikelstamm() {
+    if (!confirm('Artikelstamm wirklich löschen?')) return;
+    
+    artikelstamm = [];
+    saveToLocalStorage();
+    renderArtikel();
+    updateCategoryFilter();
+    updateStats();
+    showToast('Artikelstamm gelöscht', 'success');
+}
+
+// ===== ARTIKEL ANZEIGE =====
+function renderArtikel(filter = null) {
+    const liste = document.getElementById('produktListe');
+    
+    let items = artikelstamm;
+    
+    if (filter) {
+        items = items.filter(artikel => 
+            artikel.bezeichnung?.toLowerCase().includes(filter.toLowerCase()) ||
+            artikel.artikel_nr?.toLowerCase().includes(filter.toLowerCase()) ||
+            artikel.ean?.toLowerCase().includes(filter.toLowerCase()) ||
+            artikel.pds_nr?.toLowerCase().includes(filter.toLowerCase())
+        );
+    }
+
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    if (categoryFilter) {
+        items = items.filter(artikel => artikel.kategorie === categoryFilter);
+    }
+    
+    const subcategoryFilter = document.getElementById('subcategoryFilter').value;
+    if (subcategoryFilter) {
+        items = items.filter(artikel => artikel.unterkategorie === subcategoryFilter);
+    }
+
+    if (items.length === 0) {
+        liste.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🔍</div>
+                <p>Keine Artikel gefunden</p>
+            </div>
+        `;
+        return;
+    }
+
+    liste.innerHTML = items.map((artikel, index) => {
+        const qty = getWarenkorbMenge(artikel.artikel_nr || artikel.ean || index);
+        const ve = artikel.ve || artikel.VE || 1;
+        
+        return `
+            <div class="product-card">
+                <div class="product-name">${artikel.bezeichnung || artikel.name || 'Unbekannt'}</div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                    Art.-Nr.: ${artikel.artikel_nr || artikel.ean || '-'}<br>
+                    ${artikel.pds_nr ? `PDS: ${artikel.pds_nr}<br>` : ''}
+                    ${artikel.kategorie ? `Kategorie: ${artikel.kategorie}<br>` : ''}
+                    ${artikel.unterkategorie ? `Unterkat.: ${artikel.unterkategorie}<br>` : ''}
+                    Einheit: ${artikel.einheit || 'Stk'}${ve > 1 ? ` | VE: ${ve}` : ''}
+                </div>
+                <div class="product-actions" style="flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div class="quantity-control">
+                            <button class="qty-btn" onclick="addToWarenkorb('${artikel.artikel_nr || artikel.ean || index}', -1)">−</button>
+                            <input type="number" 
+                                   value="${qty}" 
+                                   min="0" 
+                                   style="width: 60px; text-align: center; font-weight: 600; border: 2px solid #667eea; border-radius: 8px; padding: 5px;"
+                                   onchange="setDirectQuantity('${artikel.artikel_nr || artikel.ean || index}', this.value)"
+                                   onclick="this.select()">
+                            <button class="qty-btn" onclick="addToWarenkorb('${artikel.artikel_nr || artikel.ean || index}', 1)">+</button>
+                        </div>
+                        <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" 
+                                onclick="addToWarenkorb('${artikel.artikel_nr || artikel.ean || index}', 1)">
+                            Hinzufügen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterArtikel() {
+    const searchTerm = document.getElementById('searchInput').value;
+    renderArtikel(searchTerm);
+}
+
+function updateCategoryFilter() {
+    const categories = [...new Set(artikelstamm.map(a => a.kategorie).filter(k => k))];
+    const select = document.getElementById('categoryFilter');
+    
+    select.innerHTML = '<option value="">Alle Kategorien</option>' +
+        categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    
+    updateSubcategoryFilter();
+}
+
+function updateSubcategoryFilter() {
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const select = document.getElementById('subcategoryFilter');
+    
+    let items = artikelstamm;
+    
+    // Filtere nach ausgewählter Kategorie
+    if (categoryFilter) {
+        items = items.filter(a => a.kategorie === categoryFilter);
+    }
+    
+    // Hole alle Unterkategorien
+    const subcategories = [...new Set(items.map(a => a.unterkategorie).filter(k => k))];
+    
+    select.innerHTML = '<option value="">Alle Unterkat.</option>' +
+        subcategories.sort().map(cat => `<option value="${cat}">${cat}</option>`).join('');
+}
+
+// ===== WARENKORB =====
+function getWarenkorbMenge(id) {
+    const item = warenkorb.find(w => w.id === id);
+    return item ? item.menge : 0;
+}
+
+function roundToVE(menge, ve) {
+    if (!ve || ve <= 1) return menge;
+    return Math.ceil(menge / ve) * ve;
+}
+
+function setDirectQuantity(id, value) {
+    const menge = parseInt(value) || 0;
+    
+    if (menge <= 0) {
+        // Aus Warenkorb entfernen
+        const existingIndex = warenkorb.findIndex(w => w.id === id);
+        if (existingIndex >= 0) {
+            warenkorb.splice(existingIndex, 1);
+        }
+    } else {
+        const artikel = artikelstamm.find(a => 
+            a.artikel_nr === id || a.ean === id || artikelstamm.indexOf(a).toString() === id
+        );
+        
+        if (!artikel) return;
+        
+        const ve = artikel.ve || artikel.VE || 1;
+        const mengeGerundet = roundToVE(menge, ve);
+        
+        const existingIndex = warenkorb.findIndex(w => w.id === id);
+        
+        if (existingIndex >= 0) {
+            warenkorb[existingIndex].menge = mengeGerundet;
+            warenkorb[existingIndex].ve = ve;
+        } else {
+            warenkorb.push({
+                id: id,
+                artikel_nr: artikel.artikel_nr || artikel.ean || id,
+                pds_nr: artikel.pds_nr || '',
+                bezeichnung: artikel.bezeichnung || artikel.name,
+                einheit: artikel.einheit || 'Stk',
+                kategorie: artikel.kategorie || '',
+                unterkategorie: artikel.unterkategorie || '',
+                menge: mengeGerundet,
+                ve: ve
+            });
+        }
+        
+        if (mengeGerundet !== menge) {
+            showToast(`Menge auf VE ${ve} aufgerundet: ${menge} → ${mengeGerundet}`, 'info');
+        }
+    }
+    
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+function addToWarenkorb(id, change) {
+    const artikel = artikelstamm.find(a => 
+        a.artikel_nr === id || a.ean === id || artikelstamm.indexOf(a).toString() === id
+    );
+    
+    if (!artikel) return;
+
+    const ve = artikel.ve || artikel.VE || 1;
+    const existingIndex = warenkorb.findIndex(w => w.id === id);
+    
+    if (existingIndex >= 0) {
+        let neueMenge = warenkorb[existingIndex].menge + change;
+        
+        if (neueMenge <= 0) {
+            warenkorb.splice(existingIndex, 1);
+        } else {
+            neueMenge = roundToVE(neueMenge, ve);
+            warenkorb[existingIndex].menge = neueMenge;
+            warenkorb[existingIndex].ve = ve;
+        }
+    } else if (change > 0) {
+        const mengeGerundet = roundToVE(change, ve);
+        warenkorb.push({
+            id: id,
+            artikel_nr: artikel.artikel_nr || artikel.ean || id,
+            pds_nr: artikel.pds_nr || '',
+            bezeichnung: artikel.bezeichnung || artikel.name,
+            einheit: artikel.einheit || 'Stk',
+            kategorie: artikel.kategorie || '',
+            unterkategorie: artikel.unterkategorie || '',
+            menge: mengeGerundet,
+            ve: ve
+        });
+    }
+
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+function updateWarenkorb() {
+    const liste = document.getElementById('warenkorbListe');
+    const badge = document.getElementById('cartBadge');
+    const totalItems = warenkorb.reduce((sum, item) => sum + item.menge, 0);
+
+    if (totalItems > 0) {
+        badge.textContent = totalItems;
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    if (warenkorb.length === 0) {
+        liste.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🛒</div>
+                <p>Warenkorb ist leer</p>
+            </div>
+        `;
+        return;
+    }
+
+    liste.innerHTML = warenkorb.map((item, index) => `
+        <div class="cart-item">
+            <div>
+                <div style="font-weight: 600;">${item.bezeichnung}</div>
+                <div style="font-size: 12px; color: #666;">
+                    Art.-Nr.: ${item.artikel_nr} | ${item.menge} ${item.einheit}
+                    ${item.ve && item.ve > 1 ? ` (VE: ${item.ve})` : ''}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="quantity-control">
+                    <button class="qty-btn" onclick="changeWarenkorbMenge(${index}, -1)">−</button>
+                    <input type="number" 
+                           value="${item.menge}" 
+                           min="0"
+                           style="width: 60px; text-align: center; font-weight: 600; border: 2px solid #667eea; border-radius: 8px; padding: 5px;"
+                           onchange="setWarenkorbMengeDirect(${index}, this.value)"
+                           onclick="this.select()">
+                    <button class="qty-btn" onclick="changeWarenkorbMenge(${index}, 1)">+</button>
+                </div>
+                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" 
+                        onclick="removeFromWarenkorb(${index})">
+                    🗑️
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function changeWarenkorbMenge(index, change) {
+    const item = warenkorb[index];
+    const ve = item.ve || 1;
+    let neueMenge = item.menge + change;
+    
+    if (neueMenge <= 0) {
+        warenkorb.splice(index, 1);
+    } else {
+        neueMenge = roundToVE(neueMenge, ve);
+        warenkorb[index].menge = neueMenge;
+    }
+    
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+function setWarenkorbMengeDirect(index, value) {
+    const menge = parseInt(value) || 0;
+    const item = warenkorb[index];
+    const ve = item.ve || 1;
+    
+    if (menge <= 0) {
+        warenkorb.splice(index, 1);
+    } else {
+        const mengeGerundet = roundToVE(menge, ve);
+        warenkorb[index].menge = mengeGerundet;
+        
+        if (mengeGerundet !== menge && ve > 1) {
+            showToast(`Menge auf VE ${ve} aufgerundet: ${menge} → ${mengeGerundet}`, 'info');
+        }
+    }
+    
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+function removeFromWarenkorb(index) {
+    warenkorb.splice(index, 1);
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+function clearWarenkorb() {
+    if (!confirm('Warenkorb wirklich leeren?')) return;
+    
+    warenkorb = [];
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+    showToast('Warenkorb geleert', 'success');
+}
+
+// ===== BESTELLUNG =====
+function toggleLieferadresse() {
+    const lieferart = document.getElementById('lieferart').value;
+    const group = document.getElementById('lieferadresseGroup');
+    const input = document.getElementById('lieferadresse');
+    
+    if (lieferart === 'baustelle') {
+        group.style.display = 'block';
+        input.required = true;
+    } else {
+        group.style.display = 'none';
+        input.required = false;
+    }
+}
+
+function updateBestelluebersicht() {
+    const div = document.getElementById('bestelluebersicht');
+    
+    if (warenkorb.length === 0) {
+        div.innerHTML = '<p style="color: #666;">Warenkorb ist leer</p>';
+        return;
+    }
+
+    const totalItems = warenkorb.reduce((sum, item) => sum + item.menge, 0);
+    
+    div.innerHTML = `
+        <div style="margin-bottom: 15px;">
+            <strong>Anzahl Positionen:</strong> ${warenkorb.length}<br>
+            <strong>Gesamtmenge:</strong> ${totalItems} Artikel
+        </div>
+        <div style="max-height: 200px; overflow-y: auto;">
+            ${warenkorb.map(item => `
+                <div style="padding: 8px; background: white; margin-bottom: 5px; border-radius: 5px;">
+                    ${item.menge}x ${item.bezeichnung} (${item.artikel_nr})
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function validateBestellung() {
+    const projektnummer = document.getElementById('projektnummer').value.trim();
+    const bauvorhaben = document.getElementById('bauvorhaben').value.trim();
+    const lieferart = document.getElementById('lieferart').value;
+    const liefertermin = document.getElementById('liefertermin').value;
+
+    if (!projektnummer) {
+        showToast('Bitte Projektnummer eingeben', 'error');
+        return false;
+    }
+
+    if (!bauvorhaben) {
+        showToast('Bitte Bauvorhaben eingeben', 'error');
+        return false;
+    }
+
+    if (!lieferart) {
+        showToast('Bitte Lieferart auswählen', 'error');
+        return false;
+    }
+
+    if (lieferart === 'baustelle') {
+        const lieferadresse = document.getElementById('lieferadresse').value.trim();
+        if (!lieferadresse) {
+            showToast('Bitte Lieferadresse eingeben', 'error');
+            return false;
+        }
+    }
+
+    if (!liefertermin) {
+        showToast('Bitte Liefertermin auswählen', 'error');
+        return false;
+    }
+
+    if (warenkorb.length === 0) {
+        showToast('Warenkorb ist leer', 'error');
+        return false;
+    }
+
+    return true;
+}
+
+function createBestellungData() {
+    const bestellnummer = 'BST-' + Date.now();
+    
+    return {
+        bestellnummer: bestellnummer,
+        datum: new Date().toISOString(),
+        status: 'neu',
+        projektnummer: document.getElementById('projektnummer').value.trim(),
+        bauvorhaben: document.getElementById('bauvorhaben').value.trim(),
+        lieferart: document.getElementById('lieferart').value,
+        lieferadresse: document.getElementById('lieferadresse').value.trim(),
+        liefertermin: document.getElementById('liefertermin').value,
+        notizen: document.getElementById('notizen').value.trim(),
+        ersteller: einstellungen.benutzer || 'Unbekannt',
+        firma: einstellungen.firma || '',
+        positionen: warenkorb.map(item => ({
+            artikel_nr: item.artikel_nr,
+            bezeichnung: item.bezeichnung,
+            einheit: item.einheit,
+            kategorie: item.kategorie,
+            menge: item.menge,
+            menge_geliefert: 0
+        }))
+    };
+}
+
+function bestellungPerEmail() {
+    if (!validateBestellung()) return;
+
+    const bestellung = createBestellungData();
+    
+    bestellungen.push(bestellung);
+    saveToLocalStorage();
+    updateBestellungen();
+
+    // Erstelle CSV-Datei
+    const csv = createBestellungCSV(bestellung);
+    const csvBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const csvUrl = URL.createObjectURL(csvBlob);
+    
+    // Download CSV automatisch
+    const csvLink = document.createElement('a');
+    csvLink.href = csvUrl;
+    csvLink.download = `Bestellung_${bestellung.bestellnummer}.csv`;
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+    
+    // Warte kurz, dann öffne E-Mail
+    setTimeout(() => {
+        const empfaenger = einstellungen.defaultEmail;
+        const betreff = `Bestellung ${bestellung.bestellnummer} - ${bestellung.projektnummer}`;
+        
+        let body = `BESTELLUNG\n\n`;
+        body += `Bestellnummer: ${bestellung.bestellnummer}\n`;
+        body += `Datum: ${new Date(bestellung.datum).toLocaleString('de-DE')}\n`;
+        body += `Von: ${bestellung.ersteller}`;
+        if (bestellung.firma) body += ` (${bestellung.firma})`;
+        body += `\n\n`;
+        
+        body += `PROJEKT\n`;
+        body += `Projektnummer: ${bestellung.projektnummer}\n`;
+        body += `Bauvorhaben: ${bestellung.bauvorhaben}\n`;
+        body += `Lieferart: ${bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager'}\n`;
+        
+        if (bestellung.lieferart === 'baustelle') {
+            body += `Lieferadresse: ${bestellung.lieferadresse}\n`;
+        }
+        
+        body += `Liefertermin: ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}\n\n`;
+        
+        if (bestellung.notizen) {
+            body += `NOTIZEN\n${bestellung.notizen}\n\n`;
+        }
+        
+        body += `BESTELLPOSITIONEN\n`;
+        body += `${'='.repeat(60)}\n\n`;
+        
+        bestellung.positionen.forEach((pos, index) => {
+            body += `${index + 1}. ${pos.bezeichnung}\n`;
+            body += `   Art.-Nr.: ${pos.artikel_nr}\n`;
+            body += `   Menge: ${pos.menge} ${pos.einheit}\n`;
+            if (pos.kategorie) body += `   Kategorie: ${pos.kategorie}\n`;
+            body += `\n`;
+        });
+        
+        body += `${'='.repeat(60)}\n`;
+        body += `Gesamt: ${bestellung.positionen.length} Positionen, `;
+        body += `${bestellung.positionen.reduce((sum, p) => sum + p.menge, 0)} Artikel\n\n`;
+        
+        body += `\nHINWEIS: CSV-Datei wurde automatisch heruntergeladen.\n`;
+        body += `Bitte hänge die Datei "Bestellung_${bestellung.bestellnummer}.csv" an diese E-Mail an!\n\n`;
+        
+        body += `\n--- JSON DATEN (Bitte nicht löschen für Rückmeldung!) ---\n`;
+        body += JSON.stringify(bestellung, null, 2);
+
+        const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(body)}`;
+        
+        window.location.href = mailtoLink;
+        
+        showToast('CSV heruntergeladen & E-Mail geöffnet - Bitte CSV-Datei anhängen!', 'success');
+        clearBestellformular();
+        
+        // Aufräumen
+        URL.revokeObjectURL(csvUrl);
+    }, 500);
+}
+
+function createBestellungCSV(bestellung) {
+    let csv = 'Bestellnummer,Datum,Projektnummer,Bauvorhaben,Lieferart,Lieferadresse,Liefertermin,Ersteller,Firma\n';
+    
+    csv += `"${bestellung.bestellnummer}",`;
+    csv += `"${new Date(bestellung.datum).toLocaleString('de-DE')}",`;
+    csv += `"${bestellung.projektnummer}",`;
+    csv += `"${bestellung.bauvorhaben}",`;
+    csv += `"${bestellung.lieferart === 'baustelle' ? 'Baustelle' : 'Lager'}",`;
+    csv += `"${bestellung.lieferadresse || ''}",`;
+    csv += `"${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}",`;
+    csv += `"${bestellung.ersteller}",`;
+    csv += `"${bestellung.firma || ''}"\n\n`;
+    
+    csv += 'Position,Artikel-Nr,PDS-Nr,Bezeichnung,Menge,Einheit,Kategorie,Unterkategorie\n';
+    
+    bestellung.positionen.forEach((pos, index) => {
+        csv += `${index + 1},`;
+        csv += `"${pos.artikel_nr || ''}",`;
+        csv += `"${pos.pds_nr || ''}",`;
+        csv += `"${pos.bezeichnung}",`;
+        csv += `${pos.menge},`;
+        csv += `"${pos.einheit}",`;
+        csv += `"${pos.kategorie || ''}",`;
+        csv += `"${pos.unterkategorie || ''}"\n`;
+    });
+    
+    return csv;
+}
+
+function downloadBestellungJSON() {
+    if (!validateBestellung()) return;
+
+    const bestellung = createBestellungData();
+    
+    bestellungen.push(bestellung);
+    saveToLocalStorage();
+    updateBestellungen();
+
+    const json = JSON.stringify(bestellung, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bestellung_${bestellung.bestellnummer}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('JSON-Datei heruntergeladen', 'success');
+    clearBestellformular();
+}
+
+function downloadBestellungCSV() {
+    if (!validateBestellung()) return;
+
+    const bestellung = createBestellungData();
+    
+    bestellungen.push(bestellung);
+    saveToLocalStorage();
+    updateBestellungen();
+
+    let csv = 'Bestellnummer,Datum,Projektnummer,Bauvorhaben,Lieferart,Liefertermin,Ersteller\n';
+    csv += `"${bestellung.bestellnummer}","${new Date(bestellung.datum).toLocaleString('de-DE')}","${bestellung.projektnummer}","${bestellung.bauvorhaben}","${bestellung.lieferart}","${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}","${bestellung.ersteller}"\n\n`;
+    
+    csv += 'Pos,Artikel-Nr,Bezeichnung,Kategorie,Einheit,Menge\n';
+    bestellung.positionen.forEach((pos, index) => {
+        csv += `${index + 1},"${pos.artikel_nr}","${pos.bezeichnung}","${pos.kategorie || ''}","${pos.einheit}",${pos.menge}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bestellung_${bestellung.bestellnummer}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('CSV-Datei heruntergeladen', 'success');
+    clearBestellformular();
+}
+
+function clearBestellformular() {
+    document.getElementById('projektnummer').value = '';
+    document.getElementById('bauvorhaben').value = '';
+    document.getElementById('lieferart').value = '';
+    document.getElementById('lieferadresse').value = '';
+    document.getElementById('liefertermin').value = '';
+    document.getElementById('notizen').value = '';
+    
+    warenkorb = [];
+    saveToLocalStorage();
+    updateWarenkorb();
+    updateStats();
+    renderArtikel(document.getElementById('searchInput').value);
+}
+
+// ===== BESTELLUNGEN ANZEIGE =====
+function updateBestellungen() {
+    const liste = document.getElementById('bestellungenListe');
+
+    if (bestellungen.length === 0) {
+        liste.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <p>Keine Bestellungen vorhanden</p>
+            </div>
+        `;
+        return;
+    }
+
+    liste.innerHTML = bestellungen
+        .sort((a, b) => new Date(b.datum) - new Date(a.datum))
+        .map(bestellung => {
+            const statusBadgeClass = {
+                'neu': 'status-neu',
+                'bestaetigt': 'status-bestaetigt',
+                'geliefert': 'status-geliefert'
+            }[bestellung.status] || 'status-neu';
+
+            const statusText = {
+                'neu': '⏳ Neu',
+                'bestaetigt': '✓ Bestätigt',
+                'geliefert': '📦 Geliefert'
+            }[bestellung.status] || '⏳ Neu';
+
+            const totalMenge = bestellung.positionen.reduce((sum, p) => sum + p.menge, 0);
+            const geliefertMenge = bestellung.positionen.reduce((sum, p) => sum + (p.menge_geliefert || 0), 0);
+            const prozent = totalMenge > 0 ? Math.round((geliefertMenge / totalMenge) * 100) : 0;
+
+            return `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0;">${bestellung.bestellnummer}</h3>
+                            <div style="font-size: 14px; color: #666;">
+                                📅 ${new Date(bestellung.datum).toLocaleDateString('de-DE')} | 
+                                👤 ${bestellung.ersteller}
+                            </div>
+                        </div>
+                        <span class="status-badge ${statusBadgeClass}">${statusText}</span>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 14px;">
+                            <div><strong>Projekt:</strong> ${bestellung.projektnummer}</div>
+                            <div><strong>Bauvorhaben:</strong> ${bestellung.bauvorhaben}</div>
+                            <div><strong>Liefertermin:</strong> ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}</div>
+                            ${bestellung.liefertermin_bestaetigt ? `
+                                <div><strong>Bestätigt für:</strong> ${new Date(bestellung.liefertermin_bestaetigt).toLocaleDateString('de-DE')}</div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    ${bestellung.status !== 'neu' ? `
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                                <span><strong>Lieferfortschritt</strong></span>
+                                <span>${geliefertMenge} / ${totalMenge} Artikel (${prozent}%)</span>
+                            </div>
+                            <div style="background: #e9ecef; height: 10px; border-radius: 5px; overflow: hidden;">
+                                <div style="background: ${prozent === 100 ? '#28a745' : '#667eea'}; height: 100%; width: ${prozent}%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">
+                            📦 ${bestellung.positionen.length} Positionen anzeigen
+                        </summary>
+                        <div style="margin-top: 10px; padding-left: 10px;">
+                            ${bestellung.positionen.map((pos, idx) => `
+                                <div style="padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-radius: 5px; font-size: 14px;">
+                                    ${idx + 1}. ${pos.bezeichnung} (${pos.artikel_nr})<br>
+                                    <span style="color: #666;">
+                                        Bestellt: ${pos.menge} ${pos.einheit}
+                                        ${pos.menge_geliefert > 0 ? ` | Geliefert: ${pos.menge_geliefert} ${pos.einheit}` : ''}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </details>
+
+                    ${bestellung.bemerkungen ? `
+                        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 14px;">
+                            <strong>💬 Bemerkungen:</strong><br>
+                            ${bestellung.bemerkungen}
+                        </div>
+                    ` : ''}
+
+                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="exportBestellung('${bestellung.bestellnummer}')">
+                            📥 Exportieren
+                        </button>
+                        ${bestellung.status !== 'neu' ? `
+                            <button class="btn btn-success" onclick="sendWareneingang('${bestellung.bestellnummer}')">
+                                📦 Wareneingang melden
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-danger" onclick="deleteBestellung('${bestellung.bestellnummer}')">
+                            🗑️ Löschen
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+}
+
+function sendWareneingang(bestellnummer) {
+    const bestellung = bestellungen.find(b => b.bestellnummer === bestellnummer);
+    if (!bestellung) return;
+
+    const empfaenger = einstellungen.defaultEmail;
+    const betreff = `Wareneingang ${bestellnummer} - ${bestellung.projektnummer}`;
+    
+    let body = `WARENEINGANG MELDUNG\n\n`;
+    body += `Bestellnummer: ${bestellung.bestellnummer}\n`;
+    body += `Datum Wareneingang: ${new Date().toLocaleString('de-DE')}\n`;
+    body += `Gemeldet von: ${einstellungen.benutzer || 'Unbekannt'}\n\n`;
+    
+    body += `PROJEKT\n`;
+    body += `Projektnummer: ${bestellung.projektnummer}\n`;
+    body += `Bauvorhaben: ${bestellung.bauvorhaben}\n\n`;
+    
+    body += `GELIEFERTE ARTIKEL\n`;
+    body += `${'='.repeat(60)}\n\n`;
+    
+    const lieferungen = bestellung.positionen.map(pos => ({
+        artikel_nr: pos.artikel_nr,
+        bezeichnung: pos.bezeichnung,
+        menge_bestellt: pos.menge,
+        menge_geliefert: pos.menge_geliefert || 0,
+        menge_offen: pos.menge - (pos.menge_geliefert || 0)
+    }));
+    
+    lieferungen.forEach((lief, index) => {
+        body += `${index + 1}. ${lief.bezeichnung} (${lief.artikel_nr})\n`;
+        body += `   Bestellt: ${lief.menge_bestellt}\n`;
+        body += `   Geliefert: ${lief.menge_geliefert}\n`;
+        body += `   Noch offen: ${lief.menge_offen}\n\n`;
+    });
+    
+    body += `${'='.repeat(60)}\n\n`;
+    
+    body += `\n--- JSON DATEN FÜR LIEFERSCHEIN (Bitte nicht löschen!) ---\n`;
+    body += JSON.stringify({
+        bestellnummer: bestellung.bestellnummer,
+        wareneingang_datum: new Date().toISOString(),
+        lieferungen: lieferungen
+    }, null, 2);
+
+    const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoLink;
+    
+    showToast('Wareneingang-Mail geöffnet', 'success');
+}
+
+function exportBestellung(bestellnummer) {
+    const bestellung = bestellungen.find(b => b.bestellnummer === bestellnummer);
+    if (!bestellung) return;
+
+    const json = JSON.stringify(bestellung, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bestellung_${bestellnummer}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('Bestellung exportiert', 'success');
+}
+
+function deleteBestellung(bestellnummer) {
+    if (!confirm(`Bestellung ${bestellnummer} wirklich löschen?`)) return;
+
+    const index = bestellungen.findIndex(b => b.bestellnummer === bestellnummer);
+    if (index >= 0) {
+        bestellungen.splice(index, 1);
+        saveToLocalStorage();
+        updateBestellungen();
+        showToast('Bestellung gelöscht', 'success');
+    }
+}
+
+// ===== BESTÄTIGUNG IMPORT =====
+function importBestaetigung(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            let data;
+
+            if (file.name.endsWith('.json')) {
+                data = JSON.parse(content);
+            } else {
+                const jsonMatch = content.match(/\{[\s\S]*"bestellnummer"[\s\S]*\}/);
+                if (jsonMatch) {
+                    data = JSON.parse(jsonMatch[0]);
+                } else {
+                    throw new Error('Keine gültigen Bestelldaten gefunden');
+                }
+            }
+
+            const index = bestellungen.findIndex(b => b.bestellnummer === data.bestellnummer);
+            if (index >= 0) {
+                bestellungen[index].status = 'bestaetigt';
+                bestellungen[index].liefertermin_bestaetigt = data.liefertermin_bestaetigt || data.liefertermin;
+                bestellungen[index].bemerkungen = data.bemerkungen || '';
+                
+                saveToLocalStorage();
+                updateBestellungen();
+                showToast(`Bestätigung für ${data.bestellnummer} importiert`, 'success');
+            } else {
+                showToast('Bestellung nicht gefunden', 'error');
+            }
+        } catch (error) {
+            showToast('Fehler beim Importieren: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ===== LIEFERSCHEIN IMPORT =====
+function importLieferschein(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            let data;
+
+            if (file.name.endsWith('.json')) {
+                data = JSON.parse(content);
+            } else {
+                const jsonMatch = content.match(/\{[\s\S]*"bestellnummer"[\s\S]*\}/);
+                if (jsonMatch) {
+                    data = JSON.parse(jsonMatch[0]);
+                } else {
+                    throw new Error('Keine gültigen Lieferdaten gefunden');
+                }
+            }
+
+            const index = bestellungen.findIndex(b => b.bestellnummer === data.bestellnummer);
+            if (index >= 0) {
+                if (data.lieferungen && Array.isArray(data.lieferungen)) {
+                    data.lieferungen.forEach(lief => {
+                        const posIndex = bestellungen[index].positionen.findIndex(p => p.artikel_nr === lief.artikel_nr);
+                        if (posIndex >= 0) {
+                            bestellungen[index].positionen[posIndex].menge_geliefert = lief.menge_geliefert;
+                        }
+                    });
+                }
+
+                const alleGeliefert = bestellungen[index].positionen.every(p => 
+                    (p.menge_geliefert || 0) >= p.menge
+                );
+
+                if (alleGeliefert) {
+                    bestellungen[index].status = 'geliefert';
+                }
+                
+                saveToLocalStorage();
+                updateBestellungen();
+                showToast(`Lieferschein für ${data.bestellnummer} importiert`, 'success');
+            } else {
+                showToast('Bestellung nicht gefunden', 'error');
+            }
+        } catch (error) {
+            showToast('Fehler beim Importieren: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ===== EINSTELLUNGEN =====
+function loadEinstellungen() {
+    document.getElementById('defaultEmail').value = einstellungen.defaultEmail || '';
+    document.getElementById('firma').value = einstellungen.firma || '';
+    document.getElementById('benutzer').value = einstellungen.benutzer || '';
+}
+
+function saveEinstellungen() {
+    einstellungen.defaultEmail = document.getElementById('defaultEmail').value.trim();
+    einstellungen.firma = document.getElementById('firma').value.trim();
+    einstellungen.benutzer = document.getElementById('benutzer').value.trim();
+    
+    saveToLocalStorage();
+    showToast('Einstellungen gespeichert', 'success');
+}
+
+// ===== STATISTIKEN =====
+function updateStats() {
+    document.getElementById('artikelCount').textContent = artikelstamm.length;
+    
+    const kategorien = new Set(artikelstamm.map(a => a.kategorie).filter(k => k));
+    document.getElementById('kategorienCount').textContent = kategorien.size;
+    
+    const totalItems = warenkorb.reduce((sum, item) => sum + item.menge, 0);
+    document.getElementById('cartItemsCount').textContent = totalItems;
+}
+
+// ===== DATENMANAGEMENT =====
+function exportAllesDaten() {
+    const allData = {
+        version: '1.0.0',
+        exportDatum: new Date().toISOString(),
+        artikelstamm: artikelstamm,
+        warenkorb: warenkorb,
+        bestellungen: bestellungen,
+        einstellungen: einstellungen
+    };
+
+    const json = JSON.stringify(allData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bestellsystem_backup_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('Daten exportiert', 'success');
+}
+
+function importAllesDaten() {
+    document.getElementById('alleDatenImport').click();
+}
+
+function handleAlleDatenImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm('Alle aktuellen Daten werden überschrieben. Fortfahren?')) {
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (data.artikelstamm) artikelstamm = data.artikelstamm;
+            if (data.warenkorb) warenkorb = data.warenkorb;
+            if (data.bestellungen) bestellungen = data.bestellungen;
+            if (data.einstellungen) einstellungen = data.einstellungen;
+            
+            saveToLocalStorage();
+            
+            renderArtikel();
+            updateCategoryFilter();
+            updateWarenkorb();
+            updateBestellungen();
+            loadEinstellungen();
+            updateStats();
+            
+            showToast('Daten importiert', 'success');
+        } catch (error) {
+            showToast('Fehler beim Importieren: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function resetApp() {
+    if (!confirm('ACHTUNG: Alle Daten (Artikelstamm, Warenkorb, Bestellungen, Einstellungen) werden unwiderruflich gelöscht. Fortfahren?')) {
+        return;
+    }
+
+    if (!confirm('Sind Sie wirklich sicher? Diese Aktion kann nicht rückgängig gemacht werden!')) {
+        return;
+    }
+
+    localStorage.clear();
+    artikelstamm = [];
+    warenkorb = [];
+    bestellungen = [];
+    einstellungen = {
+        defaultEmail: 'bestellung@firma.de',
+        firma: '',
+        benutzer: ''
+    };
+
+    renderArtikel();
+    updateCategoryFilter();
+    updateWarenkorb();
+    updateBestellungen();
+    loadEinstellungen();
+    updateStats();
+
+    showToast('Alle Daten gelöscht', 'success');
+}
+
+// ===== TOAST NOTIFICATION =====
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast show';
+    
+    if (type === 'success') {
+        toast.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+    } else if (type === 'error') {
+        toast.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+    } else if (type === 'warning') {
+        toast.style.background = 'linear-gradient(135deg, #ffc107, #ffb300)';
+    } else {
+        toast.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+    }
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+    </script>
+</body>
+</html>
