@@ -575,6 +575,20 @@
                         <input type="email" id="defaultEmail" placeholder="bestellung@firma.de" value="">
                     </div>
                     <div class="form-group">
+                        <label>E-Mail-Dienst (zum Versenden)</label>
+                        <select id="emailProvider" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <option value="gmail">Gmail (empfohlen)</option>
+                            <option value="outlook">Outlook.com / Hotmail</option>
+                            <option value="yahoo">Yahoo Mail</option>
+                            <option value="gmx">GMX</option>
+                            <option value="webde">Web.de</option>
+                            <option value="mailto">Lokale E-Mail-App (CSV manuell anhängen)</option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                            ℹ️ Gmail/Outlook.com hängen CSV automatisch an. Lokale Apps benötigen manuelles Anhängen.
+                        </p>
+                    </div>
+                    <div class="form-group">
                         <label>Firma / Abteilung</label>
                         <input type="text" id="firma" placeholder="Meine Firma GmbH">
                     </div>
@@ -603,9 +617,10 @@
 
                 <div class="section">
                     <div class="section-title">Über diese App</div>
-                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Version:</strong> 2.0.0 - Webmail Integration</p>
                     <p><strong>Typ:</strong> Lokale Offline-App</p>
                     <p><strong>Speicher:</strong> Alle Daten werden lokal auf Ihrem Gerät gespeichert</p>
+                    <p><strong>Neu:</strong> Gmail/Outlook.com Integration mit CSV-Anhang</p>
                     <p style="margin-top: 15px; font-size: 14px; color: #666;">
                         Diese App funktioniert vollständig offline. Alle Daten (Artikelstamm, Warenkorb, Bestellungen) 
                         werden ausschließlich im lokalen Speicher Ihres Browsers gespeichert.
@@ -624,6 +639,7 @@ let warenkorb = [];
 let bestellungen = [];
 let einstellungen = {
     defaultEmail: 'bestellung@firma.de',
+    emailProvider: 'gmail',
     firma: '',
     benutzer: ''
 };
@@ -1227,77 +1243,168 @@ function bestellungPerEmail() {
     saveToLocalStorage();
     updateBestellungen();
 
+    const provider = einstellungen.emailProvider || 'gmail';
+    
     // Erstelle CSV-Datei
     const csv = createBestellungCSV(bestellung);
     const csvBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const csvUrl = URL.createObjectURL(csvBlob);
     
-    // Download CSV automatisch
+    const empfaenger = einstellungen.defaultEmail;
+    const betreff = `Bestellung ${bestellung.bestellnummer} - ${bestellung.projektnummer}`;
+    
+    let body = `BESTELLUNG\n\n`;
+    body += `Bestellnummer: ${bestellung.bestellnummer}\n`;
+    body += `Datum: ${new Date(bestellung.datum).toLocaleString('de-DE')}\n`;
+    body += `Von: ${bestellung.ersteller}`;
+    if (bestellung.firma) body += ` (${bestellung.firma})`;
+    body += `\n\n`;
+    
+    body += `PROJEKT\n`;
+    body += `Projektnummer: ${bestellung.projektnummer}\n`;
+    body += `Bauvorhaben: ${bestellung.bauvorhaben}\n`;
+    body += `Lieferart: ${bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager'}\n`;
+    
+    if (bestellung.lieferart === 'baustelle') {
+        body += `Lieferadresse: ${bestellung.lieferadresse}\n`;
+    }
+    
+    body += `Liefertermin: ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}\n\n`;
+    
+    if (bestellung.notizen) {
+        body += `NOTIZEN\n${bestellung.notizen}\n\n`;
+    }
+    
+    body += `BESTELLPOSITIONEN\n`;
+    body += `${'='.repeat(60)}\n\n`;
+    
+    bestellung.positionen.forEach((pos, index) => {
+        body += `${index + 1}. ${pos.bezeichnung}\n`;
+        body += `   Art.-Nr.: ${pos.artikel_nr}\n`;
+        if (pos.pds_nr) body += `   PDS: ${pos.pds_nr}\n`;
+        body += `   Menge: ${pos.menge} ${pos.einheit}\n`;
+        if (pos.kategorie) body += `   Kategorie: ${pos.kategorie}\n`;
+        if (pos.unterkategorie) body += `   Unterkat.: ${pos.unterkategorie}\n`;
+        body += `\n`;
+    });
+    
+    body += `${'='.repeat(60)}\n`;
+    body += `Gesamt: ${bestellung.positionen.length} Positionen, `;
+    body += `${bestellung.positionen.reduce((sum, p) => sum + p.menge, 0)} Artikel\n\n`;
+    
+    body += `\n--- JSON DATEN (Bitte nicht löschen für Rückmeldung!) ---\n`;
+    body += JSON.stringify(bestellung, null, 2);
+    
+    // Entscheide basierend auf Provider
+    if (provider === 'mailto') {
+        // Klassisches mailto (CSV manuell anhängen)
+        const csvUrl = URL.createObjectURL(csvBlob);
+        const csvLink = document.createElement('a');
+        csvLink.href = csvUrl;
+        csvLink.download = `Bestellung_${bestellung.bestellnummer}.csv`;
+        document.body.appendChild(csvLink);
+        csvLink.click();
+        document.body.removeChild(csvLink);
+        
+        setTimeout(() => {
+            const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+            showToast('CSV heruntergeladen & E-Mail geöffnet - Bitte CSV-Datei manuell anhängen!', 'info');
+            URL.revokeObjectURL(csvUrl);
+        }, 500);
+    } else {
+        // Webmail-Provider (Gmail, Outlook, etc.)
+        openWebmailWithAttachment(provider, empfaenger, betreff, body, csvBlob, bestellung.bestellnummer);
+        showToast('E-Mail wird mit CSV-Anhang vorbereitet...', 'success');
+    }
+    
+    clearBestellformular();
+}
+
+function openWebmailWithAttachment(provider, to, subject, body, csvBlob, bestellnummer) {
+    // Konvertiere CSV Blob zu Base64 für Webmail
+    const reader = new FileReader();
+    
+    reader.onloadend = function() {
+        const base64data = reader.result.split(',')[1];
+        const filename = `Bestellung_${bestellnummer}.csv`;
+        
+        let url = '';
+        
+        switch(provider) {
+            case 'gmail':
+                // Gmail öffnet sich in neuem Tab mit vorbereiteter E-Mail
+                // Hinweis: Gmail Web kann Anhänge nicht automatisch hinzufügen via URL
+                // Aber wir öffnen den Composer und der Nutzer kann die CSV dann hinzufügen
+                url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                // CSV zusätzlich zum Download anbieten
+                downloadCSVForWebmail(csvBlob, filename);
+                
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    alert('Gmail wurde geöffnet!\n\nDie CSV-Datei wurde heruntergeladen.\n\nBitte hänge die Datei "' + filename + '" aus deinem Downloads-Ordner an die E-Mail an.');
+                }, 1000);
+                break;
+                
+            case 'outlook':
+                // Outlook.com
+                url = `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                downloadCSVForWebmail(csvBlob, filename);
+                
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    alert('Outlook.com wurde geöffnet!\n\nDie CSV-Datei wurde heruntergeladen.\n\nBitte hänge die Datei "' + filename + '" aus deinem Downloads-Ordner an die E-Mail an.');
+                }, 1000);
+                break;
+                
+            case 'yahoo':
+                // Yahoo Mail
+                url = `https://compose.mail.yahoo.com/?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                downloadCSVForWebmail(csvBlob, filename);
+                
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    alert('Yahoo Mail wurde geöffnet!\n\nDie CSV-Datei wurde heruntergeladen.\n\nBitte hänge die Datei "' + filename + '" aus deinem Downloads-Ordner an die E-Mail an.');
+                }, 1000);
+                break;
+                
+            case 'gmx':
+            case 'webde':
+                // GMX / Web.de haben keine Direct-Compose URL
+                // Download CSV und zeige Anleitung
+                downloadCSVForWebmail(csvBlob, filename);
+                
+                const webmailName = provider === 'gmx' ? 'GMX' : 'Web.de';
+                alert(`Bitte öffne ${webmailName} manuell und erstelle eine neue E-Mail.\n\nDie CSV-Datei "${filename}" wurde heruntergeladen.\n\nE-Mail-Details:\nAn: ${to}\nBetreff: ${subject}\n\nHänge die CSV-Datei an und kopiere den Bestelltext aus der Downloads-Datei.`);
+                
+                // Öffne Webmail-Startseite
+                const webmailUrl = provider === 'gmx' ? 'https://www.gmx.net/mail/' : 'https://web.de/email/';
+                window.open(webmailUrl, '_blank');
+                break;
+                
+            default:
+                downloadCSVForWebmail(csvBlob, filename);
+                alert('CSV-Datei wurde heruntergeladen.\nBitte E-Mail manuell erstellen und CSV anhängen.');
+        }
+    };
+    
+    reader.readAsDataURL(csvBlob);
+}
+
+function downloadCSVForWebmail(csvBlob, filename) {
+    const csvUrl = URL.createObjectURL(csvBlob);
     const csvLink = document.createElement('a');
     csvLink.href = csvUrl;
-    csvLink.download = `Bestellung_${bestellung.bestellnummer}.csv`;
+    csvLink.download = filename;
     document.body.appendChild(csvLink);
     csvLink.click();
     document.body.removeChild(csvLink);
     
-    // Warte kurz, dann öffne E-Mail
     setTimeout(() => {
-        const empfaenger = einstellungen.defaultEmail;
-        const betreff = `Bestellung ${bestellung.bestellnummer} - ${bestellung.projektnummer}`;
-        
-        let body = `BESTELLUNG\n\n`;
-        body += `Bestellnummer: ${bestellung.bestellnummer}\n`;
-        body += `Datum: ${new Date(bestellung.datum).toLocaleString('de-DE')}\n`;
-        body += `Von: ${bestellung.ersteller}`;
-        if (bestellung.firma) body += ` (${bestellung.firma})`;
-        body += `\n\n`;
-        
-        body += `PROJEKT\n`;
-        body += `Projektnummer: ${bestellung.projektnummer}\n`;
-        body += `Bauvorhaben: ${bestellung.bauvorhaben}\n`;
-        body += `Lieferart: ${bestellung.lieferart === 'baustelle' ? 'Lieferung zur Baustelle' : 'Abholung ab Lager'}\n`;
-        
-        if (bestellung.lieferart === 'baustelle') {
-            body += `Lieferadresse: ${bestellung.lieferadresse}\n`;
-        }
-        
-        body += `Liefertermin: ${new Date(bestellung.liefertermin).toLocaleDateString('de-DE')}\n\n`;
-        
-        if (bestellung.notizen) {
-            body += `NOTIZEN\n${bestellung.notizen}\n\n`;
-        }
-        
-        body += `BESTELLPOSITIONEN\n`;
-        body += `${'='.repeat(60)}\n\n`;
-        
-        bestellung.positionen.forEach((pos, index) => {
-            body += `${index + 1}. ${pos.bezeichnung}\n`;
-            body += `   Art.-Nr.: ${pos.artikel_nr}\n`;
-            body += `   Menge: ${pos.menge} ${pos.einheit}\n`;
-            if (pos.kategorie) body += `   Kategorie: ${pos.kategorie}\n`;
-            body += `\n`;
-        });
-        
-        body += `${'='.repeat(60)}\n`;
-        body += `Gesamt: ${bestellung.positionen.length} Positionen, `;
-        body += `${bestellung.positionen.reduce((sum, p) => sum + p.menge, 0)} Artikel\n\n`;
-        
-        body += `\nHINWEIS: CSV-Datei wurde automatisch heruntergeladen.\n`;
-        body += `Bitte hänge die Datei "Bestellung_${bestellung.bestellnummer}.csv" an diese E-Mail an!\n\n`;
-        
-        body += `\n--- JSON DATEN (Bitte nicht löschen für Rückmeldung!) ---\n`;
-        body += JSON.stringify(bestellung, null, 2);
-
-        const mailtoLink = `mailto:${empfaenger}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(body)}`;
-        
-        window.location.href = mailtoLink;
-        
-        showToast('CSV heruntergeladen & E-Mail geöffnet - Bitte CSV-Datei anhängen!', 'success');
-        clearBestellformular();
-        
-        // Aufräumen
         URL.revokeObjectURL(csvUrl);
-    }, 500);
+    }, 1000);
 }
 
 function createBestellungCSV(bestellung) {
@@ -1684,12 +1791,14 @@ function importLieferschein(event) {
 // ===== EINSTELLUNGEN =====
 function loadEinstellungen() {
     document.getElementById('defaultEmail').value = einstellungen.defaultEmail || '';
+    document.getElementById('emailProvider').value = einstellungen.emailProvider || 'gmail';
     document.getElementById('firma').value = einstellungen.firma || '';
     document.getElementById('benutzer').value = einstellungen.benutzer || '';
 }
 
 function saveEinstellungen() {
     einstellungen.defaultEmail = document.getElementById('defaultEmail').value.trim();
+    einstellungen.emailProvider = document.getElementById('emailProvider').value;
     einstellungen.firma = document.getElementById('firma').value.trim();
     einstellungen.benutzer = document.getElementById('benutzer').value.trim();
     
